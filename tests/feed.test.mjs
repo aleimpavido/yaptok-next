@@ -95,6 +95,11 @@ test("clips are read field by field", () => {
   assert.equal(clip.liked, true);
   assert.equal(clip.saved, true);
   assert.equal(clip.saveCount, 4);
+  assert.equal(clip.repostCount, 0);
+  assert.equal(clip.reposted, false);
+  const reposted = readClip(row(2, { repost_count: 7, reposted: true }));
+  assert.equal(reposted.repostCount, 7);
+  assert.equal(reposted.reposted, true);
   assert.equal(readClip({ id: "nope" }), null);
   assert.equal(readClip(row(1, { author: null })), null);
   assert.equal(readClips([row(1), "junk", row(2)]).length, 2);

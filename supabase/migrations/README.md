@@ -17,6 +17,8 @@ in order, lowest number first.
 | `009_admin_panel.sql` | What the pages under `/admin` read: lists, the log, the stats |
 | `017_messages.sql` | Direct messages: text, and sending a clip |
 | `018_messages_realtime.sql` | Private Realtime Broadcast notifications for direct messages |
+| `019_yap_progress_reposts.sql` | Personal streaks, native reposts, XP ledger and free cosmetics |
+| `020_yapchat_requests_blocks.sql` | Message requests, private request inbox and user blocking |
 | `016_inbox.sql` | The activity inbox and the triggers that fill it |
 | `015_comment_threads.sql` | Replies to comments and likes on comments |
 | `014_follow_lists.sql` | The follower and following lists of a profile |

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Avatar } from "@/components/Avatar";
 import { VerifiedIcon } from "@/components/icons";
@@ -22,6 +23,8 @@ export function ThreadView({ person, initial, currentUserId }: { person: Creator
   const [messages, setMessages] = useState(initial);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [blocking, setBlocking] = useState(false);
+  const router = useRouter();
   const end = useRef<HTMLDivElement>(null);
   const count = messages.length;
 
@@ -67,6 +70,7 @@ export function ThreadView({ person, initial, currentUserId }: { person: Creator
       .channel(`user:${currentUserId}`, { config: { private: true } })
       .on("broadcast", { event: "new_message" }, () => void refresh())
       .on("broadcast", { event: "message_read" }, () => void refresh())
+      .on("broadcast", { event: "message_request" }, () => void refresh())
       .subscribe((status) => {
         if (status === "SUBSCRIBED") stopFallback();
         else startFallback();
@@ -78,6 +82,19 @@ export function ThreadView({ person, initial, currentUserId }: { person: Creator
       void supabase.removeChannel(channel);
     };
   }, [person.username, currentUserId]);
+
+  async function blockPerson() {
+    if (!window.confirm(`Block @${person.username}? They will no longer be able to message you.`)) return;
+    setBlocking(true);
+    const result = await callRpc("block_user", { p_user: person.id });
+    if (result.ok) {
+      router.push("/messages");
+      router.refresh();
+    } else {
+      setError(socialErrorText(result.code));
+      setBlocking(false);
+    }
+  }
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -109,6 +126,7 @@ export function ThreadView({ person, initial, currentUserId }: { person: Creator
             {person.verified && <VerifiedIcon className="h-4 w-4 shrink-0" />}
           </span>
         </Link>
+        <button type="button" onClick={() => void blockPerson()} disabled={blocking} className="ml-auto text-[12px] text-text-3 hover:text-error disabled:opacity-50">{blocking ? "Blocking…" : "Block"}</button>
       </header>
 
       <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-4 py-4" data-messages>

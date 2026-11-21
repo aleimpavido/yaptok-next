@@ -94,8 +94,8 @@ no screen yet for adding other testers.
 You need [Node.js 22](https://nodejs.org/) with npm.
 
 ```bash
-git clone https://github.com/myfilehero/yaptok.git
-cd yaptok
+git clone https://github.com/aleimpavido/yaptok-next.git
+cd yaptok-next
 npm ci
 cp .env.example .env.local   # leave it empty for now
 npm run dev                  # http://localhost:3000, "database not connected"

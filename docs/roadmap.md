@@ -4,7 +4,7 @@ The goal: everything people expect from an app of this kind, finished to a
 high standard, with YapTok's own name, mark and look. One feature per session,
 each behind its flag in `/admin`.
 
-Status on 2026-11-12: **13 built, 10 partial, 9 missing** (32 items). Branches, each stacked on the one before: `feature/player-polish`, `feature/following-feed`, `feature/saves`, `feature/discover`, `feature/follow-lists`, `feature/comment-threads`, `feature/inbox`, `feature/messages`.
+Status on 2026-11-21: **13 built, 13 partial, 8 missing** (34 items). Branches, each stacked on the one before: `feature/player-polish`, `feature/following-feed`, `feature/saves`, `feature/discover`, `feature/follow-lists`, `feature/comment-threads`, `feature/inbox`, `feature/messages`.
 
 ## Checklist
 
@@ -23,7 +23,9 @@ Status on 2026-11-12: **13 built, 10 partial, 9 missing** (32 items). Branches, 
 | 11 | Comments | partial | Replies (one level), comment likes, delete, report (`comment_threads` flag). No pins or mentions |
 | 12 | Share | partial | Copy link and the phone share sheet. No repost |
 | 13 | Save to collections | partial | Save a clip and find it in a private Saved tab (`saves` flag). No named collections |
-| 14 | Repost | missing | |
+| 14 | Repost | partial | Migration 019 adds the database foundation and profile/following RPCs; UI and end-to-end tests remain |
+| 14a | Personal posting streak | partial | Migration 019 derives daily streaks and a 90-day calendar; UI/reminders/milestones remain |
+| 14b | XP, levels and free cosmetics | partial | Migration 019 adds server-ledger XP, level calculation and free catalogue; UI/achievement system remains |
 | 15 | Clips made with another clip (side by side, or continuing from it) | missing | Needs the encoder to join two videos |
 | 16 | Sounds: pick one, a page per sound, original audio | missing | Original audio from creators only, see below |
 | 17 | Upload | built | Multipart to storage, progress, cancel, processing state |

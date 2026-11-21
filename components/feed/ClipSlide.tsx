@@ -14,7 +14,7 @@ import { ClipMenu } from "./ClipMenu";
 import { CommentsSheet } from "./CommentsSheet";
 import { ReportSheet } from "./ReportSheet";
 import { ShareSheet } from "./ShareSheet";
-import { useFollow, useLike, useSave } from "./useSocial";
+import { useFollow, useLike, useRepost, useSave } from "./useSocial";
 
 function RailButton({
   label,
@@ -71,12 +71,14 @@ export function ClipSlide({
   const follows = useFlag("follows");
   const share = useFlag("share");
   const saves = useFlag("saves");
+  const reposts = useFlag("reposts");
   const profiles = useFlag("profiles");
   const hashtagPages = useFlag("hashtags");
   const gestures = useFlag("gestures");
   const scrub = useFlag("scrub");
   const toggleLike = useLike(signedIn);
   const toggleSave = useSave(signedIn);
+  const toggleRepost = useRepost(signedIn);
   const soundBlocked = useUi((s) => s.soundBlocked);
   const toggleFollow = useFollow(signedIn, `/v/${clip.id}`);
   const active = mode === "active";
@@ -186,6 +188,13 @@ export function ClipSlide({
           {saves && (
             <RailButton label={clip.saved ? "Remove from saved" : "Save"} pressed={clip.saved} count={clip.saveCount} onClick={() => toggleSave(clip)} testId="save">
               <BookmarkIcon className={`h-6 w-6 ${clip.saved ? "text-[var(--accent)]" : "text-white"}`} />
+            </RailButton>
+          )}
+          {reposts && !clip.mine && (
+            <RailButton label={clip.reposted ? "Remove repost" : "Repost"} pressed={clip.reposted} count={clip.repostCount} onClick={() => toggleRepost(clip)} testId="repost">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`h-6 w-6 ${clip.reposted ? "text-[var(--accent)]" : "text-white"}`}>
+                <path d="m17 2 4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15" /><path d="m7 22-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" />
+              </svg>
             </RailButton>
           )}
           {share && (

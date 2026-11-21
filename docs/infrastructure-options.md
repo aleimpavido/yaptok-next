@@ -50,7 +50,9 @@ Before any backend migration, require:
 - Appwrite pricing: https://appwrite.io/pricing
 - Appwrite Free plan behavior: https://appwrite.io/docs/advanced/billing/free
 - Appwrite Realtime quotas: https://appwrite.io/changelog/entry/2026-03-19
-- Cloudflare Workers pricing: https://www.cloudflare.com/plans/\n- Cloudflare Next.js / vinext deployment guide: https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/\n- Cloudflare OpenNext adapter guide: https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/
+- Cloudflare Workers pricing: https://www.cloudflare.com/plans/
+- Cloudflare Next.js / vinext deployment guide: https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/
+- Cloudflare OpenNext adapter guide: https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/
 - Cloudflare D1 pricing: https://developers.cloudflare.com/d1/platform/pricing/
 - Cloudflare Durable Objects pricing: https://developers.cloudflare.com/durable-objects/platform/pricing/
 - Convex limits: https://docs.convex.dev/production/state/limits

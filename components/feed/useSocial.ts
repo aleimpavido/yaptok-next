@@ -75,3 +75,27 @@ export function useFollow(signedIn: boolean, next: string) {
     [signedIn, next, router],
   );
 }
+
+
+/** Repost a public clip without copying the underlying video or media. */
+export function useRepost(signedIn: boolean) {
+  const router = useRouter();
+  return useCallback(
+    (clip: Clip) => {
+      if (!signedIn) return router.push(loginUrl(`/v/${clip.id}`));
+      const want = !clip.reposted;
+      const { patch } = useFeed.getState();
+      patch(clip.id, { reposted: want, repostCount: Math.max(0, clip.repostCount + (want ? 1 : -1)) });
+      void callRpc<{ reposted: boolean; repost_count: number }>("toggle_repost", { p_video: clip.id, p_on: want }).then((res) => {
+        if (res.ok) {
+          patch(clip.id, { reposted: res.data.reposted === true, repostCount: Number(res.data.repost_count) || 0 });
+          if (want) useUi.getState().showToast("Reposted to your profile.");
+        } else {
+          patch(clip.id, { reposted: clip.reposted, repostCount: clip.repostCount });
+          useUi.getState().showToast(socialErrorText(res.code));
+        }
+      });
+    },
+    [signedIn, router],
+  );
+}

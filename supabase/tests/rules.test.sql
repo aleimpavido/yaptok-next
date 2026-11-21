@@ -334,12 +334,23 @@ select t.is(jsonb_array_length(public.inbox_page()), 0, 'nobody sees someone els
 select t.anon();
 select t.is(t.err($$select public.inbox_page()$$), 'permission denied for function inbox_page', 'visitors have no inbox');
 
+-- A fourth, independent account exercises message-request privacy.
+reset role;
+insert into auth.users (id, email, raw_user_meta_data)
+values ('00000000-0000-4000-8000-00000000000d', 'dan@example.com', '{"username": "dan"}');
+\set dan '''00000000-0000-4000-8000-00000000000d'''
+select t.login(:dan);
+select public.complete_signup('dan', date '1998-04-12');
+
 -- Messages ------------------------------------------------------------------------------------
 
 select t.login(:cal);
 select t.is(t.err($$select public.send_message('00000000-0000-4000-8000-00000000000b', 'hi')$$), 'messages_off', 'messages are off until their flag is on');
 reset role;
 update public.feature_flags set mode = 'everyone' where key = 'messages';
+-- Make the first existing chat a followed conversation so it remains direct.
+select t.login(:bea);
+select public.toggle_follow(:cal, true);
 select t.login(:cal);
 select t.is(public.send_message(:bea, E'  hello\nthere ') ->> 'body', 'hello there', 'a message is sent, trimmed to one line');
 select t.is(public.send_message(:bea, '', :clip) -> 'video' ->> 'username', 'bea', 'a clip can be sent along');
@@ -369,7 +380,44 @@ select t.login(:owner);
 select t.is(jsonb_array_length(public.dm_threads()), 0, 'nobody sees someone else''s conversations');
 select t.is(jsonb_array_length(public.dm_thread('cal') -> 'messages'), 0, 'or reads them by asking for one side');
 select t.anon();
-select t.is(t.err($$select public.dm_threads()$$), 'permission denied for function dm_threads', 'visitors have no messages');
+select t.is(t.err($select public.dm_threads()$), 'permission denied for function dm_threads', 'visitors have no messages');
+select t.login(:bea);
+select public.toggle_follow(:cal, false);
+
+-- YapChat message requests and blocking -------------------------------------------------
+
+select t.login(:dan);
+select public.send_message(:cal, 'Hello, this starts a request.');
+reset role;
+select t.is((select count(*)::int from realtime.messages where topic = 'user:00000000-0000-4000-8000-00000000000c' and event = 'message_request'), 1, 'a non-followed first message is broadcast as a request');
+select t.login(:dan);
+select t.is(t.err(format($q$select public.send_message(%L, 'another request message')$q$, :cal)), 'request_pending', 'a pending request allows only one initial message');
+select t.is(t.err($q$select * from public.message_requests$q$), 'permission denied for table message_requests', 'requests are not readable directly');
+select t.is(t.err($q$select * from public.message_blocks$q$), 'permission denied for table message_blocks', 'blocks are not readable directly');
+select t.is(t.err(format($q$select public.dm_request_action(%L, true)$q$, :cal)), 'request_not_found', 'a sender cannot accept their own request');
+
+select t.login(:cal);
+select t.is(jsonb_array_length(public.dm_requests()), 1, 'the recipient sees a pending request in Requests');
+select t.is((select count(*)::int from jsonb_array_elements(public.dm_threads()) e where e -> 'with' ->> 'username' = 'dan'), 0, 'pending requests stay out of the ordinary inbox');
+select t.is(public.dm_thread('dan'), null, 'a pending request cannot be opened as a normal conversation');
+select t.is(t.err(format($q$select public.send_message(%L, 'reply before accepting')$q$, :dan)), 'request_pending', 'the recipient must accept before replying');
+select t.is(public.dm_request_action(:dan, true), 'accepted', 'the recipient can accept the request');
+select t.is(jsonb_array_length(public.dm_requests()), 0, 'accepted requests leave the Requests list');
+select t.is(jsonb_array_length(public.dm_thread('dan') -> 'messages'), 1, 'accepting opens the conversation');
+select public.send_message(:dan, 'Thanks, hello!');
+select t.is(jsonb_array_length(public.dm_thread('dan') -> 'messages'), 2, 'both people can now reply');
+
+select t.login(:dan);
+select public.block_user(:cal);
+select t.is(jsonb_array_length(public.my_message_blocks()), 1, 'a person can see their own block list');
+select t.is(public.dm_unread(), 0, 'blocking clears unread messages from that account');
+select t.is(public.dm_thread('cal'), null, 'blocking hides the conversation');
+select t.login(:cal);
+select t.is(t.err(format($q$select public.send_message(%L, 'blocked')$q$, :dan)), 'user_blocked', 'a blocked person cannot send messages');
+select t.is(public.dm_thread('dan'), null, 'the blocked person cannot read the conversation');
+select t.login(:dan);
+select public.unblock_user(:cal);
+select t.is(public.dm_thread('cal') -> 'with' ->> 'username', 'cal', 'unblocking restores access to an accepted conversation');
 
 -- Hashtags, search, Discover ----------------------------------------------------------------
 
@@ -402,6 +450,42 @@ select t.is(public.follow_list('cal', 'following') -> 'people' -> 0 ->> 'usernam
 select t.is(jsonb_array_length(public.follow_list('bea', 'following') -> 'people'), 0, 'an empty list is empty');
 select t.is(public.follow_list('nobody_here', 'followers'), null, 'no such account, no list');
 select t.is(public.follow_list('bea', 'friends'), null, 'only the two kinds exist');
+
+-- YapTok progress, reposts and free cosmetics --------------------------------------------
+
+reset role;
+update public.feature_flags set mode = 'everyone'
+ where key in ('streaks','reposts','prestige','collection');
+
+select t.login(:cal);
+select t.is(public.set_my_timezone('Europe/Berlin'), 'Europe/Berlin', 'a valid IANA timezone is saved');
+select t.is(t.err($q$select public.set_my_timezone('Not/A_Real_Zone')$q$), 'timezone_invalid', 'an invalid timezone is refused');
+select t.is(t.err($q$select * from public.prestige_xp$q$), 'permission denied for table prestige_xp', 'XP cannot be read or forged directly');
+select t.is(t.err($q$insert into public.prestige_xp(user_id,source_key,amount) values (auth.uid(),'fake',999)$q$), 'permission denied for table prestige_xp', 'clients cannot award themselves XP');
+select t.is(t.err($q$select public.claim_cosmetic('frame_spark')$q$), 'cosmetic_locked', 'cosmetics require earned XP and level');
+select t.is(t.err($q$select public.equip_cosmetic('frame_spark')$q$), 'cosmetic_locked', 'only an earned cosmetic can be equipped');
+
+select t.is((public.toggle_repost(:clip, true) ->> 'reposted')::boolean, true, 'a public clip can be reposted');
+select t.is((public.toggle_repost(:clip, true) ->> 'repost_count')::integer, 1, 'reposting twice does not duplicate the count');
+reset role;
+select t.anon();
+select t.is((select count(*)::int from public.reposts where video_id = :clip), 1, 'public repost metadata is readable when the feature is enabled');
+select t.is(t.err(format($q$insert into public.reposts(user_id,video_id) values (%L,%L)$q$, :cal, :clip)), 'permission denied for table reposts', 'clients cannot write repost rows directly');
+select t.login(:cal);
+select t.is((public.video_by_id(:clip) ->> 'reposted')::boolean, true, 'the normal video card reports the viewer repost state');
+select t.is((public.video_by_id(:clip) ->> 'repost_count')::integer, 1, 'the normal video card reports the repost count');
+select t.is(jsonb_array_length(public.my_reposts('cal')), 1, 'the profile repost list references the original clip');
+select t.is(jsonb_array_length(public.following_reposts()), 1, 'the Following repost feed includes followed creators');
+select t.is((public.my_yap_progress() ->> 'xp')::integer, 5, 'a unique repost earns the configured XP once');
+select t.is(jsonb_array_length(public.my_yap_progress() -> 'calendar'), 90, 'the streak calendar covers 90 local days');
+select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 0, 'no valid daily post means no active streak');
+select t.is((public.toggle_repost(:clip, false) ->> 'reposted')::boolean, false, 'a repost can be removed');
+select t.is((public.toggle_repost(:clip, true) ->> 'reposted')::boolean, true, 'a removed repost can be restored');
+select t.is((public.my_yap_progress() ->> 'xp')::integer, 5, 'retries do not duplicate repost XP');
+
+select t.is(t.err($q$select public.toggle_repost('00000000-0000-4000-8000-00000000000c', true)$q$), 'not_found', 'a missing clip cannot be reposted');
+select t.login(:bea);
+select t.is(t.err(format($q$select public.toggle_repost(%L, true)$q$, :clip)), 'cannot_repost_own', 'creators cannot repost their own clip');
 
 -- Reports and moderation --------------------------------------------------------------------
 
@@ -450,7 +534,7 @@ select t.is(jsonb_array_length(public.feed_page()), 1, 'unbanning brings the cli
 
 select t.login(:owner);
 select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'views')::int = 2, 'the stats page counts today''s views');
-select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'signups')::int = 3, 'and today''s sign-ups');
+select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'signups')::int = 4, 'and today''s sign-ups');
 select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'uploads')::int = 1, 'and today''s uploads that did not fail');
 select t.is(jsonb_array_length(public.admin_stats(7) -> 'days'), 7, 'one row per day');
 select t.ok(jsonb_array_length(public.admin_log_page()) >= 20, 'every admin action above is in the audit log');
@@ -486,7 +570,7 @@ select t.is(
         'is_admin', 'is_banned', 'session_status', 'username_available', 'username_is_valid', 'video_is_visible',
         'video_comments', 'feed_page', 'video_by_id', 'profile_page', 'record_view',
         'hashtag_page', 'search_all', 'discover_page', 'follow_list', 'comment_replies',
-        'video_extension_for', 'clean_hashtags', 'encode_max_attempts', 'encode_stale_after')),
+        'video_extension_for', 'clean_hashtags', 'encode_max_attempts', 'encode_stale_after', 'repost_is_visible')),
   '', 'visitors can call only the functions meant for them');
 
 select 'ALL PASSED' as result;
