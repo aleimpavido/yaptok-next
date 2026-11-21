@@ -23,6 +23,8 @@ export function MessageRequests({ initial, currentUserId }: { initial: MessageRe
   const [message, setMessage] = useState("");
   const router = useRouter();
 
+  useEffect(() => setRequests(initial), [initial]);
+
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
