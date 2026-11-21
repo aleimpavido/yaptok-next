@@ -45,7 +45,7 @@ async function RequestsContent() {
         <div><p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">YapChat</p><h1 className="mt-1 text-[24px] font-medium text-text">Message requests</h1></div>
         <Link href="/messages" className="btn-secondary">Inbox</Link>
       </div>
-      {error ? <p role="alert" className="mt-5 text-[14px] text-text-2">Requests could not be loaded.</p> : <MessageRequests initial={requests} />}
+      {error ? <p role="alert" className="mt-5 text-[14px] text-text-2">Requests could not be loaded.</p> : <MessageRequests initial={requests} currentUserId={user.id} />}
     </main>
   );
 }
