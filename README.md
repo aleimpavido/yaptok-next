@@ -75,13 +75,16 @@ clips from `npm run stack -- --seed`.
   invite, an audit log of every admin action, and a stats page.
 - **Checked in the database**: no table can be written through the API. Every
   write is a function that checks the caller, and every admin function
-  refuses anyone who is not an admin. 141 SQL checks hold this in place.
+  refuses anyone who is not an admin. 266 SQL assertions in the rules suite exercise these permissions and database invariants.
 
 ## Not built yet
 
-Search, hashtag pages, sounds, a ranked feed (it is newest first), profile
-pictures, notifications, sign in with other accounts, creator analytics, and
-the legal pages. Their flags are already in the panel, switched off.
+A ranked feed (the current order is newest first), creator captions, sounds
+and licensed music, drafts, a full editor, remix/side-by-side video, live
+streams, creator analytics, profile photo uploads and external profile links,
+private accounts, push notifications, and group chats or image/voice messages.
+These are future work; existing experimental features remain behind flags
+that start switched off.
 
 Known limits of what is built: a signed out visitor's view is counted by a key
 their browser keeps, so a determined visitor could count twice; creator and
