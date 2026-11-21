@@ -26,6 +26,7 @@ in order, lowest number first.
 | `018_messages_realtime.sql` | Private Realtime Broadcast notifications for direct messages |
 | `019_yap_progress_reposts.sql` | Personal streaks, native reposts, XP ledger and free cosmetics |
 | `020_yapchat_requests_blocks.sql` | Message requests, private request inbox and user blocking |
+| `021_yapchat_pair_serialization.sql` | Serialize first-contact messages, request decisions and block changes per user pair |
 
 ## On a new Supabase project
 
