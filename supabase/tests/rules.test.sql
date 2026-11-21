@@ -501,6 +501,17 @@ select t.login(:cal);
 select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 1, 'multiple posts on one day still count as one streak day');
 select t.is((public.my_yap_progress() ->> 'xp')::integer, 25, 'same-day, private and failed posts award no extra XP');
 
+-- Backdated valid posts exercise local-day grouping and the three-day milestone.
+reset role;
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-yesterday', 'public', 'ready', now() - interval '1 day');
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-two-days-ago', 'public', 'ready', now() - interval '2 days');
+select t.login(:cal);
+select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 3, 'three consecutive local days form a three-day streak');
+select t.is((public.my_yap_progress() ->> 'best_streak')::integer, 3, 'the three-day run becomes the personal record');
+select t.is((public.my_yap_progress() ->> 'xp')::integer, 85, 'daily XP and the three-day milestone are awarded once');
+
 select t.is((public.toggle_repost(:clip, false) ->> 'reposted')::boolean, false, 'a repost can be removed');
 select t.is((public.toggle_repost(:clip, true) ->> 'reposted')::boolean, true, 'a removed repost can be restored');
 select t.is((public.my_yap_progress() ->> 'xp')::integer, 5, 'retries do not duplicate repost XP');
