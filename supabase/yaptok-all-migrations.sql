@@ -4960,8 +4960,14 @@ begin
     if request_row.status = 'declined' then
       raise exception 'request_declined' using errcode = 'P0001';
     end if;
-    if request_row.status = 'pending' and request_row.receiver_id = new.sender_id then
-      raise exception 'request_pending' using errcode = 'P0001';
+    if request_row.status = 'pending' then
+      if request_row.receiver_id = new.sender_id
+        or exists (
+          select 1 from public.messages prior
+          where prior.sender_id = request_row.sender_id and prior.receiver_id = request_row.receiver_id
+        ) then
+        raise exception 'request_pending' using errcode = 'P0001';
+      end if;
     end if;
     return new;
   end if;
