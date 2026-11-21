@@ -334,6 +334,14 @@ select t.is(jsonb_array_length(public.inbox_page()), 0, 'nobody sees someone els
 select t.anon();
 select t.is(t.err($$select public.inbox_page()$$), 'permission denied for function inbox_page', 'visitors have no inbox');
 
+-- A fourth, independent account exercises message-request privacy.
+reset role;
+insert into auth.users (id, email, raw_user_meta_data)
+values ('00000000-0000-4000-8000-00000000000d', 'dan@example.com', '{"username": "dan"}');
+\set dan '''00000000-0000-4000-8000-00000000000d'''
+select t.login(:dan);
+select public.complete_signup('dan', date '1998-04-12');
+
 -- Messages ------------------------------------------------------------------------------------
 
 select t.login(:cal);
@@ -370,6 +378,34 @@ select t.is(jsonb_array_length(public.dm_threads()), 0, 'nobody sees someone els
 select t.is(jsonb_array_length(public.dm_thread('cal') -> 'messages'), 0, 'or reads them by asking for one side');
 select t.anon();
 select t.is(t.err($$select public.dm_threads()$$), 'permission denied for function dm_threads', 'visitors have no messages');
+
+-- YapChat message requests and blocking -------------------------------------------------
+
+select t.login(:dan);
+select public.send_message(:cal, 'Hello, this starts a request.');
+select t.is((select count(*)::int from realtime.messages where topic = 'user:00000000-0000-4000-8000-00000000000c' and event = 'message_request'), 1, 'a non-followed first message is broadcast as a request');
+select t.is(t.err($q$select * from public.message_requests$q$), 'permission denied for table message_requests', 'requests are not readable directly');
+
+select t.login(:cal);
+select t.is(jsonb_array_length(public.dm_requests()), 1, 'the recipient sees a pending request in Requests');
+select t.is(public.dm_thread('dan'), null, 'a pending request cannot be opened as a normal conversation');
+select t.is(t.err(format($q$select public.send_message(%L, 'reply before accepting')$q$, :dan)), 'request_pending', 'the recipient must accept before replying');
+select t.is(public.dm_request_action(:dan, true), 'accepted', 'the recipient can accept the request');
+select t.is(jsonb_array_length(public.dm_requests()), 0, 'accepted requests leave the Requests list');
+select t.is(jsonb_array_length(public.dm_thread('dan') -> 'messages'), 1, 'accepting opens the conversation');
+select public.send_message(:dan, 'Thanks, hello!');
+select t.is(jsonb_array_length(public.dm_thread('dan') -> 'messages'), 2, 'both people can now reply');
+
+select t.login(:dan);
+select public.block_user(:cal);
+select t.is(jsonb_array_length(public.my_message_blocks()), 1, 'a person can see their own block list');
+select t.is(public.dm_thread('cal'), null, 'blocking hides the conversation');
+select t.login(:cal);
+select t.is(t.err(format($q$select public.send_message(%L, 'blocked')$q$, :dan)), 'user_blocked', 'a blocked person cannot send messages');
+select t.is(public.dm_thread('dan'), null, 'the blocked person cannot read the conversation');
+select t.login(:dan);
+select public.unblock_user(:cal);
+select t.is(public.dm_thread('cal') -> 'with' ->> 'username', 'cal', 'unblocking restores access to an accepted conversation');
 
 -- Hashtags, search, Discover ----------------------------------------------------------------
 
