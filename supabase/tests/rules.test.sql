@@ -348,6 +348,9 @@ select t.login(:cal);
 select t.is(t.err($$select public.send_message('00000000-0000-4000-8000-00000000000b', 'hi')$$), 'messages_off', 'messages are off until their flag is on');
 reset role;
 update public.feature_flags set mode = 'everyone' where key = 'messages';
+-- Make the first existing chat a followed conversation so it remains direct.
+select t.login(:bea);
+select public.toggle_follow(:cal, true);
 select t.login(:cal);
 select t.is(public.send_message(:bea, E'  hello\nthere ') ->> 'body', 'hello there', 'a message is sent, trimmed to one line');
 select t.is(public.send_message(:bea, '', :clip) -> 'video' ->> 'username', 'bea', 'a clip can be sent along');
@@ -377,7 +380,9 @@ select t.login(:owner);
 select t.is(jsonb_array_length(public.dm_threads()), 0, 'nobody sees someone else''s conversations');
 select t.is(jsonb_array_length(public.dm_thread('cal') -> 'messages'), 0, 'or reads them by asking for one side');
 select t.anon();
-select t.is(t.err($$select public.dm_threads()$$), 'permission denied for function dm_threads', 'visitors have no messages');
+select t.is(t.err($select public.dm_threads()$), 'permission denied for function dm_threads', 'visitors have no messages');
+select t.login(:bea);
+select public.toggle_follow(:cal, false);
 
 -- YapChat message requests and blocking -------------------------------------------------
 
