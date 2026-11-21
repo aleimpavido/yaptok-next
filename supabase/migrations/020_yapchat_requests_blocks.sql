@@ -17,6 +17,20 @@ create index if not exists message_requests_receiver_idx
 alter table public.message_requests enable row level security;
 revoke all on public.message_requests from anon, authenticated;
 
+-- Existing conversations predate requests. Mark every existing pair accepted
+-- so this rollout never locks out people who already chat with each other.
+insert into public.message_requests(sender_id, receiver_id, status, created_at, updated_at)
+select
+  least(m.sender_id, m.receiver_id),
+  greatest(m.sender_id, m.receiver_id),
+  'accepted',
+  min(m.created_at),
+  max(m.created_at)
+from public.messages m
+group by least(m.sender_id, m.receiver_id), greatest(m.sender_id, m.receiver_id)
+on conflict (sender_id, receiver_id) do nothing;
+
+
 create table if not exists public.message_blocks (
   blocker_id uuid not null references public.profiles(id) on delete cascade,
   blocked_id uuid not null references public.profiles(id) on delete cascade,
