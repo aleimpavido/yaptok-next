@@ -52,6 +52,7 @@ export function ProfileView({
   signedIn,
   tab = "clips",
   tabsOn = false,
+  repostsOn = false,
 }: {
   profile: Profile;
   clips: Clip[];
@@ -62,6 +63,8 @@ export function ProfileView({
   tab?: ProfileTab;
   /** The owner's Liked and Saved tabs. */
   tabsOn?: boolean;
+  /** Reposts are visible on creator profiles when enabled. */
+  repostsOn?: boolean;
 }) {
   const follows = useFlag("follows");
   const upload = useFlag("upload");
@@ -70,6 +73,9 @@ export function ProfileView({
   const [following, setFollowing] = useState(followingAtLoad);
   const [followers, setFollowers] = useState(profile.followerCount);
   const toggleFollow = useFollow(signedIn, `/@${profile.username}`);
+  const profileTabs: [ProfileTab, string][] = [["clips", "Clips"]];
+  if (tabsOn) profileTabs.push(["liked", "Liked"], ["saved", "Saved"]);
+  if (repostsOn) profileTabs.push(["reposts", "Reposts"]);
 
   return (
     <div className="mx-auto max-w-[960px] px-4 py-6 sm:px-6" data-profile={profile.username}>
@@ -120,13 +126,9 @@ export function ProfileView({
         </div>
       </header>
 
-      {tabsOn && (
-        <nav aria-label="Your lists" className="mt-6 flex justify-center gap-1 border-b border-divider sm:justify-start" data-profile-tabs>
-          {([
-            ["clips", "Clips"],
-            ["liked", "Liked"],
-            ["saved", "Saved"],
-          ] as const).map(([key, label]) => (
+      {(tabsOn || repostsOn) && (
+        <nav aria-label="Profile lists" className="mt-6 flex justify-center gap-1 border-b border-divider sm:justify-start" data-profile-tabs>
+          {profileTabs.map(([key, label]) => (
             <Link
               key={key}
               href={key === "clips" ? `/@${profile.username}` : `/@${profile.username}?tab=${key}`}
@@ -139,7 +141,7 @@ export function ProfileView({
           ))}
         </nav>
       )}
-      {tabsOn && tab !== "clips" && <p className="mt-3 text-[13px] text-text-2">Only you can see this list.</p>}
+      {tabsOn && (tab === "liked" || tab === "saved") && <p className="mt-3 text-[13px] text-text-2">Only you can see this list.</p>}
 
       {profile.banned ? (
         <p className="mt-10 text-center text-[14px] text-text-2" data-profile-banned>
@@ -149,14 +151,16 @@ export function ProfileView({
         <div className="mt-12 text-center" data-profile-empty>
           <ClipIcon className="mx-auto h-12 w-12 text-text-3" />
           <p className="mt-3 text-[16px] font-medium text-text">
-            {tab === "liked" ? "No liked clips yet" : tab === "saved" ? "Nothing saved yet" : mine ? "Post your first clip" : "No clips yet"}
+            {tab === "liked" ? "No liked clips yet" : tab === "saved" ? "Nothing saved yet" : tab === "reposts" ? "No reposts yet" : mine ? "Post your first clip" : "No clips yet"}
           </p>
           <p className="mt-1 text-[14px] text-text-2">
             {tab === "liked"
               ? "Clips you like show up here."
               : tab === "saved"
                 ? "Tap the bookmark on a clip to keep it here."
-                : mine
+                : tab === "reposts"
+                  ? "Public clips you repost will appear here."
+                  : mine
                   ? "Your clips will show up here."
                   : "When this creator posts, their clips show up here."}
           </p>
