@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { DbStatus } from "@/components/DbStatus";
-import { BellIcon, DarkThemeIcon, HomeIcon, LogoMark, PlusIcon, SearchIcon, SettingsIcon, ShieldIcon, SignOutIcon, UserIcon } from "@/components/icons";
+import { BellIcon, ChartIcon, DarkThemeIcon, HomeIcon, LogoMark, PlusIcon, SearchIcon, SettingsIcon, ShieldIcon, SignOutIcon, UserIcon } from "@/components/icons";
 import { useSession } from "@/lib/store/session";
 import { useUi } from "@/lib/store/ui";
 import { callRpc } from "@/lib/social/client";
@@ -53,6 +53,15 @@ function useNavItems(): Item[] {
   }
   if (user && flags.inbox) {
     items.push({ key: "inbox", href: "/inbox", label: "Inbox", icon: <BellIcon className="h-6 w-6" />, active: path === "/inbox" || path.startsWith("/messages"), badge: unreadBadge(unread) });
+  }
+  if (user && (flags.streaks || flags.prestige || flags.collection || flags.reposts)) {
+    items.push({
+      key: "rewards",
+      href: "/progress",
+      label: "Rewards",
+      icon: <ChartIcon className="h-6 w-6" />,
+      active: ["/progress", "/streaks", "/prestige", "/collection", "/reposts", "/following/reposts"].includes(path),
+    });
   }
   if (user && flags.profiles) {
     const href = `/@${user.username}`;
