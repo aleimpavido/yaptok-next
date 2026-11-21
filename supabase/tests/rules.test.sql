@@ -387,6 +387,7 @@ select public.toggle_follow(:cal, false);
 -- YapChat message requests and blocking -------------------------------------------------
 
 select t.login(:dan);
+select t.is(t.err(format($q$select public.lock_message_pair(%L,%L)$q$, :dan, :cal)), 'permission denied for function lock_message_pair', 'the message pair lock helper is not callable by clients');
 select public.send_message(:cal, 'Hello, this starts a request.');
 reset role;
 select t.is((select count(*)::int from realtime.messages where topic = 'user:00000000-0000-4000-8000-00000000000c' and event = 'message_request'), 1, 'a non-followed first message is broadcast as a request');
