@@ -58,7 +58,7 @@ async function Threads() {
 export default function MessagesPage() {
   return (
     <div className="mx-auto max-w-[560px] px-4 py-6 sm:px-6">
-      <h1 className="text-[24px] font-medium leading-8 text-text">Messages</h1>
+      <div className="flex items-center justify-between gap-3"><h1 className="text-[24px] font-medium leading-8 text-text">Messages</h1><Link href="/messages/requests" className="text-[13px] font-medium text-[var(--accent)] hover:underline">Requests</Link></div>
       <Suspense fallback={<div className="mt-4 h-14 rounded-xl bg-skeleton" aria-hidden />}>
         <Threads />
       </Suspense>
