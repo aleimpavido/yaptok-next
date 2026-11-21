@@ -393,6 +393,8 @@ select t.is((select count(*)::int from realtime.messages where topic = 'user:000
 select t.login(:dan);
 select t.is(t.err(format($q$select public.send_message(%L, 'another request message')$q$, :cal)), 'request_pending', 'a pending request allows only one initial message');
 select t.is(t.err($q$select * from public.message_requests$q$), 'permission denied for table message_requests', 'requests are not readable directly');
+select t.is(t.err($q$select * from public.message_blocks$q$), 'permission denied for table message_blocks', 'blocks are not readable directly');
+select t.is(t.err(format($q$select public.dm_request_action(%L, true)$q$, :cal)), 'request_not_found', 'a sender cannot accept their own request');
 
 select t.login(:cal);
 select t.is(jsonb_array_length(public.dm_requests()), 1, 'the recipient sees a pending request in Requests');
