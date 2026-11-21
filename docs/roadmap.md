@@ -4,7 +4,7 @@ The goal: everything people expect from an app of this kind, finished to a
 high standard, with YapTok's own name, mark and look. One feature per session,
 each behind its flag in `/admin`.
 
-Status on 2026-11-21: **13 built, 13 partial, 8 missing** (34 items). Branches, each stacked on the one before: `feature/player-polish`, `feature/following-feed`, `feature/saves`, `feature/discover`, `feature/follow-lists`, `feature/comment-threads`, `feature/inbox`, `feature/messages`.
+Status on 2026-11-21: **13 built, 14 partial, 7 missing** (34 items). Branches, each stacked on the one before: `feature/player-polish`, `feature/following-feed`, `feature/saves`, `feature/discover`, `feature/follow-lists`, `feature/comment-threads`, `feature/inbox`, `feature/messages`.
 
 ## Checklist
 
@@ -23,9 +23,9 @@ Status on 2026-11-21: **13 built, 13 partial, 8 missing** (34 items). Branches, 
 | 11 | Comments | partial | Replies (one level), comment likes, delete, report (`comment_threads` flag). No pins or mentions |
 | 12 | Share | partial | Copy link and the phone share sheet. No repost |
 | 13 | Save to collections | partial | Save a clip and find it in a private Saved tab (`saves` flag). No named collections |
-| 14 | Repost | partial | Migration 019 adds the database foundation and profile/following RPCs; UI and end-to-end tests remain |
-| 14a | Personal posting streak | partial | Migration 019 derives daily streaks and a 90-day calendar; UI/reminders/milestones remain |
-| 14b | XP, levels and free cosmetics | partial | Migration 019 adds server-ledger XP, level calculation and free catalogue; UI/achievement system remains |
+| 14 | Repost | partial | Action-rail toggle, own repost list, creator profile tab and Following Reposts page are implemented behind `reposts`; main feed ranking still does not mix reposts into the clip stream |
+| 14a | Personal posting streak | partial | `/streaks` shows current/best runs and a 90-day timezone-aware calendar; daily XP and milestone rewards are server-side; reminders/recovery remain |
+| 14b | XP, levels and free cosmetics | partial | `/prestige` and `/collection` expose the XP ledger, levels, free catalogue, claim and equip; profile/chat rendering, achievements, leaderboards and seasons remain |
 | 15 | Clips made with another clip (side by side, or continuing from it) | missing | Needs the encoder to join two videos |
 | 16 | Sounds: pick one, a page per sound, original audio | missing | Original audio from creators only, see below |
 | 17 | Upload | built | Multipart to storage, progress, cancel, processing state |
@@ -35,12 +35,12 @@ Status on 2026-11-21: **13 built, 13 partial, 8 missing** (34 items). Branches, 
 | 21 | Hashtags and hashtag pages | built | `/tag/<name>`, linked from every clip (`hashtags` flag) |
 | 22 | Search: clips, people, sounds, tags | built | People, hashtags and clips (`search` flag). Simple matching; sounds when they exist |
 | 23 | Discover and trending | built | Trending hashtags, creators, popular clips this week (`discover` flag) |
-| 24 | Profiles | partial | Grid, bio, counts, follow, follower and following lists, the owner's Liked and Saved tabs. No picture upload, links |
-| 25 | Direct messages | partial | Text and sending a clip, a list of conversations, unread counts (`messages` flag). New messages arrive by asking every few seconds, not instantly. No blocking or "who can message me" yet |
+| 24 | Profiles | partial | Grid, bio, counts, follow, follower/following lists, owner Liked/Saved tabs and a Reposts tab. No picture upload or profile links |
+| 25 | Direct messages | partial | Text and clip sharing, private Realtime delivery/read receipts, message requests and database-enforced blocking. No groups, images/voice, reactions, edit/delete, typing or online presence |
 | 26 | Activity inbox and notifications | partial | The Inbox page with an unread dot (`inbox` flag). No push notifications |
 | 27 | Live streams | missing | Last phase, needs a streaming service |
 | 28 | Creator analytics | missing | |
-| 29 | Privacy: private account, who can comment or message, block, mute | missing | |
+| 29 | Privacy: private account, who can comment or message, block, mute | partial | YapChat message requests and blocking are enforced; private accounts, broader contact controls and mute remain | |
 | 30 | Reports and a moderation queue | built | |
 | 31 | Age gating | partial | 13 or older at sign up. No age limits on single clips |
 | 32 | Admin panel with a switch for every feature | built | Plus site settings, log, stats |
