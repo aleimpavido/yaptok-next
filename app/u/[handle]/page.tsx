@@ -37,6 +37,7 @@ async function ProfileGate({ params, searchParams }: Pick<PageProps<"/u/[handle]
       signedIn={state.signedIn}
       tab={state.tab}
       tabsOn={state.tabsOn}
+      repostsOn={state.repostsOn}
     />
   );
 }
