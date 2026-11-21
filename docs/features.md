@@ -51,7 +51,7 @@ from `lib/store/session.ts` in the browser.
 
 ## Messages
 
-Direct messages start with text and shared clips. New messages and read receipts are announced through private Supabase Realtime Broadcast topics scoped to the relevant account; events contain only the message id. Conversation contents are fetched through the existing `dm_thread()` database function, which remains the authorization boundary. The browser falls back to a low-frequency refresh if Realtime is unavailable and refreshes when a hidden tab becomes visible. See `018_messages_realtime.sql`.
+Direct messages start with text and shared clips. New messages and read receipts are announced through private Supabase Realtime Broadcast topics scoped to the relevant account; events contain only the message id. Conversation contents are fetched through `dm_thread()`. Non-followed senders enter a private Requests inbox until accepted; blocking is enforced in the database and hides the conversation from both people. The browser falls back to a low-frequency refresh if Realtime is unavailable and refreshes when a hidden tab becomes visible. See `018_messages_realtime.sql`.
 
 ## The feed
 
