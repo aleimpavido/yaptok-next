@@ -4378,7 +4378,7 @@ as $q$
     'view_count', v.view_count,
     'share_count', v.share_count,
     'save_count', v.save_count,
-    'repost_count', v.repost_count,
+    'repost_count', case when public.flag_on('reposts', viewer) then v.repost_count else 0 end,
     'published_at', v.published_at,
     'created_at', v.created_at,
     'removed', v.removed_at is not null,
@@ -4395,7 +4395,7 @@ as $q$
       and exists (select 1 from public.follows f where f.follower_id = viewer and f.followee_id = v.owner_id),
     'saved', viewer is not null
       and exists (select 1 from public.saves s where s.video_id = v.id and s.user_id = viewer),
-    'reposted', viewer is not null
+    'reposted', viewer is not null and public.flag_on('reposts', viewer)
       and exists (select 1 from public.reposts r where r.video_id = v.id and r.user_id = viewer),
     'mine', viewer is not null and v.owner_id = viewer
   )
@@ -4404,19 +4404,31 @@ as $q$
 $q$;
 
 alter table public.reposts enable row level security;
+create or replace function public.repost_is_visible(p_user uuid, p_video uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $q$
+  select exists (
+    select 1 from public.reposts r
+    join public.videos v on v.id = r.video_id
+    join public.profiles creator on creator.id = v.owner_id
+    join public.profiles actor on actor.id = r.user_id
+    where r.user_id = p_user and r.video_id = p_video
+      and v.visibility = 'public' and v.status = 'ready' and v.removed_at is null
+      and creator.banned_at is null and actor.banned_at is null
+      and public.flag_on('reposts', (select auth.uid()))
+  );
+$q$;
+revoke execute on function public.repost_is_visible(uuid, uuid) from public;
+grant execute on function public.repost_is_visible(uuid, uuid) to anon, authenticated;
+
 drop policy if exists "public reposts of public clips are readable" on public.reposts;
 create policy "public reposts of public clips are readable"
   on public.reposts for select to anon, authenticated
-  using (
-    exists (
-      select 1 from public.videos v
-      join public.profiles owner on owner.id = v.owner_id
-      where v.id = video_id and v.visibility = 'public'
-        and v.status = 'ready' and v.removed_at is null
-        and owner.banned_at is null
-    )
-    and exists (select 1 from public.profiles actor where actor.id = user_id and actor.banned_at is null)
-  );
+  using (public.repost_is_visible(user_id, video_id));
 
 revoke all on public.reposts from anon, authenticated;
 grant select on public.reposts to anon, authenticated;
@@ -4883,7 +4895,6 @@ values
  ('prestige','YapTok Prestige','XP, levels, titles and achievements.','off'),
  ('collection','YapTok Collection','Free earned cosmetics unlocked through activity and levels.','off')
 on conflict(key) do nothing;
-
 
 
 -- ===== 020_yapchat_requests_blocks.sql =====
