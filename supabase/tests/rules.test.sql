@@ -465,6 +465,11 @@ select t.is(t.err($q$select public.equip_cosmetic('frame_spark')$q$), 'cosmetic_
 
 select t.is((public.toggle_repost(:clip, true) ->> 'reposted')::boolean, true, 'a public clip can be reposted');
 select t.is((public.toggle_repost(:clip, true) ->> 'repost_count')::integer, 1, 'reposting twice does not duplicate the count');
+reset role;
+select t.anon();
+select t.is((select count(*)::int from public.reposts where video_id = :clip), 1, 'public repost metadata is readable when the feature is enabled');
+select t.is(t.err(format($q$insert into public.reposts(user_id,video_id) values (%L,%L)$q$, :cal, :clip)), 'permission denied for table reposts', 'clients cannot write repost rows directly');
+select t.login(:cal);
 select t.is((public.video_by_id(:clip) ->> 'reposted')::boolean, true, 'the normal video card reports the viewer repost state');
 select t.is((public.video_by_id(:clip) ->> 'repost_count')::integer, 1, 'the normal video card reports the repost count');
 select t.is(jsonb_array_length(public.my_reposts('cal')), 1, 'the profile repost list references the original clip');
@@ -563,7 +568,7 @@ select t.is(
         'is_admin', 'is_banned', 'session_status', 'username_available', 'username_is_valid', 'video_is_visible',
         'video_comments', 'feed_page', 'video_by_id', 'profile_page', 'record_view',
         'hashtag_page', 'search_all', 'discover_page', 'follow_list', 'comment_replies',
-        'video_extension_for', 'clean_hashtags', 'encode_max_attempts', 'encode_stale_after')),
+        'video_extension_for', 'clean_hashtags', 'encode_max_attempts', 'encode_stale_after', 'repost_is_visible')),
   '', 'visitors can call only the functions meant for them');
 
 select 'ALL PASSED' as result;
