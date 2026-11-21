@@ -81,7 +81,7 @@ as $q$
     'view_count', v.view_count,
     'share_count', v.share_count,
     'save_count', v.save_count,
-    'repost_count', v.repost_count,
+    'repost_count', case when public.flag_on('reposts', viewer) then v.repost_count else 0 end,
     'published_at', v.published_at,
     'created_at', v.created_at,
     'removed', v.removed_at is not null,
@@ -98,7 +98,7 @@ as $q$
       and exists (select 1 from public.follows f where f.follower_id = viewer and f.followee_id = v.owner_id),
     'saved', viewer is not null
       and exists (select 1 from public.saves s where s.video_id = v.id and s.user_id = viewer),
-    'reposted', viewer is not null
+    'reposted', viewer is not null and public.flag_on('reposts', viewer)
       and exists (select 1 from public.reposts r where r.video_id = v.id and r.user_id = viewer),
     'mine', viewer is not null and v.owner_id = viewer
   )
@@ -122,6 +122,7 @@ as $q$
     where r.user_id = p_user and r.video_id = p_video
       and v.visibility = 'public' and v.status = 'ready' and v.removed_at is null
       and creator.banned_at is null and actor.banned_at is null
+      and public.flag_on('reposts', (select auth.uid()))
   );
 $q$;
 revoke execute on function public.repost_is_visible(uuid, uuid) from public;
