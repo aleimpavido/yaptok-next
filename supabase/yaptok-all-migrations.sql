@@ -5286,7 +5286,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if p_a is null or p_b is null or p_a = p_b then
+  if p_a is null or p_b is null then
     raise exception 'message_pair_invalid' using errcode = 'P0001';
   end if;
   perform pg_catalog.pg_advisory_xact_lock(
