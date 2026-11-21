@@ -4895,7 +4895,7 @@ on conflict(key) do nothing;
 create table if not exists public.message_requests (
   sender_id uuid not null references public.profiles(id) on delete cascade,
   receiver_id uuid not null references public.profiles(id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending','accepted','declined')),
+  status text not null default 'pending' check (status in ('pending','accepted','declined','blocked')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key(sender_id, receiver_id),
@@ -4959,6 +4959,8 @@ begin
   if request_row.sender_id is not null then
     if request_row.status = 'declined' then
       raise exception 'request_declined' using errcode = 'P0001';
+    elsif request_row.status = 'blocked' then
+      raise exception 'user_blocked' using errcode = 'P0001';
     end if;
     if request_row.status = 'pending' then
       if request_row.receiver_id = new.sender_id
@@ -5020,7 +5022,7 @@ as $q$
         )
         and not exists (
           select 1 from public.message_requests r
-          where r.status = 'declined'
+          where r.status in ('declined','blocked')
             and ((r.sender_id = m.sender_id and r.receiver_id = m.receiver_id)
               or (r.sender_id = m.receiver_id and r.receiver_id = m.sender_id))
         )
@@ -5064,7 +5066,7 @@ begin
     select 1 from public.message_requests r
     where ((r.sender_id = me and r.receiver_id = other.id)
         or (r.sender_id = other.id and r.receiver_id = me))
-      and r.status = 'declined'
+      and r.status in ('declined','blocked')
   ) then return null; end if;
 
   if exists (
@@ -5173,7 +5175,7 @@ begin
 
   insert into public.message_blocks(blocker_id, blocked_id)
   values(me, p_user) on conflict do nothing;
-  update public.message_requests set status = 'declined', updated_at = now()
+  update public.message_requests set status = 'blocked', updated_at = now()
     where status = 'pending'
       and ((sender_id = me and receiver_id = p_user) or (sender_id = p_user and receiver_id = me));
   update public.messages set read_at = now()
@@ -5195,6 +5197,8 @@ begin
   if me is null then raise exception 'not_signed_in' using errcode = 'P0001'; end if;
   if not public.flag_on('messages', me) then raise exception 'messages_off' using errcode = 'P0001'; end if;
   delete from public.message_blocks where blocker_id = me and blocked_id = p_user;
+  delete from public.message_requests where status = 'blocked'
+    and ((sender_id = me and receiver_id = p_user) or (sender_id = p_user and receiver_id = me));
   return true;
 end;
 $q$;
