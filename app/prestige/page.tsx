@@ -32,7 +32,8 @@ async function PrestigeContent() {
   const supabase = await createClient();
   const { data, error } = supabase ? await supabase.rpc("my_yap_progress") : { data: null, error: true };
   const progress = readPrestige(data);
-  const progressPct = progress ? Math.min(100, Math.round((progress.xp / progress.next_level_xp) * 100)) : 0;
+  const currentLevelXp = progress ? (progress.level - 1) * (progress.level - 1) * 100 : 0;
+  const progressPct = progress ? Math.min(100, Math.round(((progress.xp - currentLevelXp) / Math.max(1, progress.next_level_xp - currentLevelXp)) * 100)) : 0;
 
   return (
     <main className="mx-auto max-w-[720px] px-4 py-8 sm:px-6">
@@ -53,7 +54,7 @@ async function PrestigeContent() {
               <div className="text-right"><p className="text-[13px] text-text-2">Total XP</p><p className="mt-1 text-[28px] font-semibold text-text">{progress.xp.toLocaleString()}</p></div>
             </div>
             <div className="mt-5 h-3 overflow-hidden rounded-full bg-hover"><div className="h-full rounded-full bg-[var(--accent)]" style={{ width: progressPct + "%" }} /></div>
-            <p className="mt-2 text-[12px] text-text-3">{progress.xp.toLocaleString()} / {progress.next_level_xp.toLocaleString()} XP toward the next level</p>
+            <p className="mt-2 text-[12px] text-text-3">{Math.max(0, progress.xp - currentLevelXp).toLocaleString()} / {Math.max(1, progress.next_level_xp - currentLevelXp).toLocaleString()} XP toward the next level</p>
           </section>
           <section className="mt-5 rounded-2xl border border-divider p-5">
             <h2 className="font-semibold text-text">How XP is earned</h2>
