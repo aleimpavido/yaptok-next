@@ -13,6 +13,7 @@ export type Message = {
   /** The clip sent along, or null. hadVideo says one was sent but is gone now. */
   video: { id: string; caption: string; thumbnailUrl: string | null; username: string } | null;
   hadVideo: boolean;
+  read?: boolean;
   /** Not saved yet: shown at once, confirmed when the server answers. */
   pending?: boolean;
 };
@@ -35,6 +36,7 @@ export function readMessage(value: unknown): Message | null {
         ? { id: v.id, caption: typeof v.caption === "string" ? v.caption : "", thumbnailUrl: typeof v.thumbnail_url === "string" ? v.thumbnail_url : null, username: typeof v.username === "string" ? v.username : "" }
         : null,
     hadVideo: r.had_video === true,
+    read: r.read === true,
   };
 }
 

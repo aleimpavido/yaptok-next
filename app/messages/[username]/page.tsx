@@ -19,7 +19,7 @@ async function Conversation({ params }: { params: PageProps<"/messages/[username
   // Null: no such account, or it is you.
   const thread = readThread(supabase ? (await supabase.rpc("dm_thread", { p_username: username })).data : null);
   if (!thread) notFound();
-  return <ThreadView person={thread.with} initial={thread.messages} />;
+  return <ThreadView person={thread.with} initial={thread.messages} currentUserId={user.id} />;
 }
 
 /** One conversation. */

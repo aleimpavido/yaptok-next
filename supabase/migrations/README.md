@@ -16,6 +16,7 @@ in order, lowest number first.
 | `008_moderation.sql` | Reports, and the admin actions: remove, restore, ban, unban, verify, invite |
 | `009_admin_panel.sql` | What the pages under `/admin` read: lists, the log, the stats |
 | `017_messages.sql` | Direct messages: text, and sending a clip |
+| `018_messages_realtime.sql` | Private Realtime Broadcast notifications for direct messages |
 | `016_inbox.sql` | The activity inbox and the triggers that fill it |
 | `015_comment_threads.sql` | Replies to comments and likes on comments |
 | `014_follow_lists.sql` | The follower and following lists of a profile |

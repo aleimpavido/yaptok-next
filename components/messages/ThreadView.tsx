@@ -8,16 +8,17 @@ import type { Creator } from "@/lib/discover/types";
 import { socialErrorText, timeAgo } from "@/lib/feed/format";
 import { callRpc } from "@/lib/social/client";
 import { MESSAGE_MAX, mergeMessages, readMessage, readThread, type Message } from "@/lib/social/messages";
+import { createClient } from "@/lib/supabase/client";
 
-/** How often an open conversation asks for new messages, in ms. */
-const POLL_MS = 4000;
+/** Fallback polling is used only while Realtime is disconnected. */
+const FALLBACK_POLL_MS = 15000;
 
 /**
- * One conversation: the messages oldest first, yours on the right, a box to
- * write. A sent message shows at once and is confirmed when the database
- * answers. The page asks for new messages every few seconds while it is open.
+ * One conversation. Private Supabase Broadcast events notify the recipient
+ * that a new message exists; the actual message is fetched through dm_thread()
+ * so database authorization remains the source of truth.
  */
-export function ThreadView({ person, initial }: { person: Creator; initial: Message[] }) {
+export function ThreadView({ person, initial, currentUserId }: { person: Creator; initial: Message[]; currentUserId: string }) {
   const [messages, setMessages] = useState(initial);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,15 +30,54 @@ export function ThreadView({ person, initial }: { person: Creator; initial: Mess
   }, [count]);
 
   useEffect(() => {
-    const t = setInterval(() => {
-      if (document.hidden) return;
-      void callRpc("dm_thread", { p_username: person.username }).then((res) => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    let fallback: ReturnType<typeof setInterval> | undefined;
+    let refreshing = false;
+    const refresh = async () => {
+      if (document.hidden || refreshing) return;
+      refreshing = true;
+      try {
+        const res = await callRpc("dm_thread", { p_username: person.username });
         const thread = res.ok ? readThread(res.data) : null;
         if (thread) setMessages((have) => mergeMessages(have, thread.messages));
+      } catch {
+        // Realtime is best-effort; the next event or fallback poll retries.
+      } finally {
+        refreshing = false;
+      }
+    };
+    const startFallback = () => {
+      if (!fallback) fallback = setInterval(() => void refresh(), FALLBACK_POLL_MS);
+    };
+    const stopFallback = () => {
+      if (fallback) clearInterval(fallback);
+      fallback = undefined;
+    };
+
+    const onVisibility = () => {
+      if (!document.hidden) void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Start with a conservative fallback until the private channel is ready.
+    startFallback();
+    const channel = supabase
+      .channel(`user:${currentUserId}`, { config: { private: true } })
+      .on("broadcast", { event: "new_message" }, () => void refresh())
+      .on("broadcast", { event: "message_read" }, () => void refresh())
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") stopFallback();
+        else startFallback();
       });
-    }, POLL_MS);
-    return () => clearInterval(t);
-  }, [person.username]);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stopFallback();
+      void supabase.removeChannel(channel);
+    };
+  }, [person.username, currentUserId]);
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -90,7 +130,7 @@ export function ThreadView({ person, initial }: { person: Creator; initial: Mess
               {m.body && (
                 <p className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px] leading-5 ${m.mine ? "bg-[var(--brand-strong)] text-white" : "bg-hover text-text"}`}>{m.body}</p>
               )}
-              <p className={`mt-0.5 text-[11px] text-text-3 ${m.mine ? "text-right" : ""}`}>{m.pending ? "Sending" : timeAgo(m.createdAt)}</p>
+              <p className={`mt-0.5 text-[11px] text-text-3 ${m.mine ? "text-right" : ""}`}>{m.pending ? "Sending" : m.mine && m.read ? `${timeAgo(m.createdAt)} · Seen` : timeAgo(m.createdAt)}</p>
             </div>
           </li>
         ))}
