@@ -202,12 +202,12 @@ as $q$
     from public.message_requests r
     join public.profiles p on p.id = r.sender_id and p.banned_at is null
     cross join lateral (
-      select x.* as last_message from public.messages x
+      select x as last_message from public.messages x
       where x.sender_id = r.sender_id and x.receiver_id = r.receiver_id
       order by x.id desc limit 1
     ) m
     where r.receiver_id = (select auth.uid()) and r.status = 'pending'
-      and not exists (select 1 from public.message_blocks b where b.blocker_id = r.receiver_id and b.blocked_id = r.sender_id)
+      and not exists (select 1 from public.message_blocks b where (b.blocker_id = r.receiver_id and b.blocked_id = r.sender_id) or (b.blocker_id = r.sender_id and b.blocked_id = r.receiver_id))
   ), '[]'::jsonb) end;
 $q$;
 
@@ -228,6 +228,7 @@ begin
 
   select status into current_status from public.message_requests
     where sender_id = p_sender and receiver_id = me for update;
+  if p_accept is null then raise exception 'request_action_invalid' using errcode = 'P0001'; end if;
   if current_status is distinct from 'pending' then
     raise exception 'request_not_found' using errcode = 'P0001';
   end if;
@@ -296,9 +297,10 @@ stable
 security definer
 set search_path = ''
 as $q$
-  select coalesce(jsonb_agg(jsonb_build_object(
-    'id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url
-  ) order by p.username), '[]'::jsonb)
+  select case when not public.flag_on('messages', (select auth.uid())) then '[]'::jsonb
+    else coalesce(jsonb_agg(jsonb_build_object(
+      'id', p.id, 'username', p.username, 'display_name', p.display_name, 'avatar_url', p.avatar_url
+    ) order by p.username), '[]'::jsonb) end
   from public.message_blocks b
   join public.profiles p on p.id = b.blocked_id
   where b.blocker_id = (select auth.uid());
