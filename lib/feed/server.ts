@@ -92,9 +92,10 @@ export type ProfileState =
       /** Which list is shown. Liked and Saved are only for the owner, with the saves flag on. */
       tab: ProfileTab;
       tabsOn: boolean;
+      repostsOn: boolean;
     };
 
-export type ProfileTab = "clips" | "liked" | "saved";
+export type ProfileTab = "clips" | "liked" | "saved" | "reposts";
 
 const n = (v: unknown) => Math.max(0, Math.floor(Number(v) || 0));
 
@@ -114,9 +115,16 @@ export async function profileState(username: string, wanted: ProfileTab = "clips
   const p = page.profile;
   const mine = page.mine === true;
   const tabsOn = mine && (await flagOn("saves", user?.id ?? null));
-  const tab: ProfileTab = tabsOn ? wanted : "clips";
-  // The owner's private lists come from my_clips(), which only ever answers the caller's own.
-  const listed = tab === "clips" ? page.videos : (await supabase.rpc("my_clips", { p_kind: tab })).data;
+  // Reposts are a profile surface for signed-in viewers. The RPC independently
+  // enforces the profile and repost feature flags before returning any rows.
+  const repostsOn = user !== null && (await flagOn("reposts", user.id));
+  const tab: ProfileTab =
+    wanted === "reposts" ? (repostsOn ? "reposts" : "clips") :
+    wanted === "liked" || wanted === "saved" ? (tabsOn ? wanted : "clips") : "clips";
+  // Private lists come from my_clips(); reposts use the authorized profile RPC.
+  const listed = tab === "clips" ? page.videos :
+    tab === "reposts" ? (await supabase.rpc("my_reposts", { p_username: username })).data :
+    (await supabase.rpc("my_clips", { p_kind: tab })).data;
   return {
     kind: "found",
     profile: {
@@ -133,6 +141,7 @@ export async function profileState(username: string, wanted: ProfileTab = "clips
     mine,
     tab,
     tabsOn,
+    repostsOn,
     mediaBase: mediaBase(),
     signedIn: user !== null,
   };
