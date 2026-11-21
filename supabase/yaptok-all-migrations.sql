@@ -5140,11 +5140,9 @@ begin
     updated_at = now()
     where sender_id = p_sender and receiver_id = me;
 
-  if p_accept then
-    update public.messages set read_at = now()
-      where sender_id = p_sender and receiver_id = me and read_at is null;
-    return 'accepted';
-  end if;
+  update public.messages set read_at = now()
+    where sender_id = p_sender and receiver_id = me and read_at is null;
+  if p_accept then return 'accepted'; end if;
   return 'declined';
 end;
 $q$;
@@ -5172,6 +5170,8 @@ begin
   update public.message_requests set status = 'declined', updated_at = now()
     where status = 'pending'
       and ((sender_id = me and receiver_id = p_user) or (sender_id = p_user and receiver_id = me));
+  update public.messages set read_at = now()
+    where receiver_id = me and sender_id = p_user and read_at is null;
   return true;
 end;
 $q$;
