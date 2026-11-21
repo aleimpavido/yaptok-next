@@ -33,7 +33,7 @@ export async function HomeFeed({ first, source = "feed_page" }: { first?: string
       </FeedNotice>
     );
   }
-  const tabs = state.followingOn ? <FeedTabs current={source === "following_page" ? "following" : "foryou"} /> : null;
+  const tabs = state.followingOn ? <FeedTabs current={source === "following_page" ? "following" : "foryou"} repostsOn={state.repostsOn} /> : null;
   if (source === "following_page") {
     if (!state.followingOn) notFound();
     if (!state.signedIn) {

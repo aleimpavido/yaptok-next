@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps<"/u/[handle]">): Pr
 
 async function ProfileGate({ params, searchParams }: Pick<PageProps<"/u/[handle]">, "params" | "searchParams">) {
   const wanted = (await searchParams).tab;
-  const state = await profileState((await params).handle, wanted === "liked" || wanted === "saved" ? wanted : "clips");
+  const state = await profileState((await params).handle, wanted === "liked" || wanted === "saved" || wanted === "reposts" ? wanted : "clips");
   if (state.kind === "missing") notFound();
   if (state.kind === "no-db") {
     return (
@@ -37,6 +37,7 @@ async function ProfileGate({ params, searchParams }: Pick<PageProps<"/u/[handle]
       signedIn={state.signedIn}
       tab={state.tab}
       tabsOn={state.tabsOn}
+      repostsOn={state.repostsOn}
     />
   );
 }

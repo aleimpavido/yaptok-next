@@ -51,7 +51,17 @@ from `lib/store/session.ts` in the browser.
 
 ## Messages
 
-Direct messages start with text and shared clips. `/messages/requests` handles first-contact requests and `/messages/blocked` manages blocked accounts. New messages and read receipts are announced through private Supabase Realtime Broadcast topics scoped to the relevant account; events contain only the message id. Conversation contents are fetched through `dm_thread()`. Non-followed senders enter a private Requests inbox until accepted; blocking is enforced in the database and hides the conversation from both people. The browser falls back to a low-frequency refresh if Realtime is unavailable and refreshes when a hidden tab becomes visible. See `018_messages_realtime.sql`.
+Direct messages support text and shared clips. `/messages/requests` handles first-contact requests and `/messages/blocked` manages blocked accounts. New messages, read receipts and request notifications are announced through private Supabase Realtime Broadcast topics scoped to the relevant account; events contain only message IDs. Conversation contents are fetched through the authorized `dm_thread()` RPC. A person who is not followed by the recipient starts a private request and can send one initial message; the recipient must accept before replying. Blocking is enforced in the database and hides the conversation from both people. Pair-level advisory locks serialize first messages, request decisions and block changes. The browser falls back to a low-frequency refresh if Realtime is unavailable and refreshes when a hidden tab becomes visible. See migrations `017`–`021`. Group chats, image/voice messages, reactions, edit/delete, typing and online presence remain future work.
+
+## YapTok progress and reposts
+
+YapStreak is personal, not shared between two accounts. It counts valid public clips that have finished processing, using the creator's IANA timezone. Multiple posts in one local day count once; private, failed, deleted or moderation-removed clips do not count. `/streaks` shows the current streak, best run and a 90-day calendar. The timezone can be changed from the page. A gentle reminder system and recovery options are not yet implemented.
+
+YapRepost stores a reference to the original video, never a second media object. The action rail can add or remove a repost; `/reposts` lists the signed-in creator's reposts, `/@username?tab=reposts` shows a creator's public repost tab, and `/following/reposts` lists reposts from followed creators. Repost counts and notifications are database-backed. The Following feed has a shortcut to its repost view.
+
+YapTok Prestige records XP in a server-controlled, idempotent ledger. Current rewards include one daily public-post reward, capped repost rewards and one-time streak milestone bonuses. The level is derived from earned XP. YapTok Collection is a free catalogue: users claim and equip items only after meeting the XP and level requirements. There are no paid cosmetics or premium currency. Current UI previews are not yet applied to profile avatars, chat bubbles or message effects; achievements, leaderboards and seasons remain future work.
+
+All four features are behind separate flags (`streaks`, `reposts`, `prestige`, `collection`), off by default.
 
 ## The feed
 
