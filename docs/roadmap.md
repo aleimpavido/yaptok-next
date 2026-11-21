@@ -4,7 +4,7 @@ The goal: everything people expect from an app of this kind, finished to a
 high standard, with YapTok's own name, mark and look. One feature per session,
 each behind its flag in `/admin`.
 
-Status on 2026-11-21: **13 built, 14 partial, 7 missing** (34 items). Branches, each stacked on the one before: `feature/player-polish`, `feature/following-feed`, `feature/saves`, `feature/discover`, `feature/follow-lists`, `feature/comment-threads`, `feature/inbox`, `feature/messages`.
+Status on 2026-11-21: **13 built, 14 partial, 7 missing** (34 items). Current review stack in this fork: `feat/yapchat-realtime` (PR #1), `feat/yaptok-platform-core` (PR #2), then `feat/yaptok-next-experience` (PR #3). Earlier `feature/*` branches record the preceding implementation history.
 
 ## Checklist
 
