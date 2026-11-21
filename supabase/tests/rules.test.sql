@@ -388,6 +388,7 @@ select t.is(t.err($q$select * from public.message_requests$q$), 'permission deni
 
 select t.login(:cal);
 select t.is(jsonb_array_length(public.dm_requests()), 1, 'the recipient sees a pending request in Requests');
+select t.is((select count(*)::int from jsonb_array_elements(public.dm_threads()) e where e -> 'with' ->> 'username' = 'dan'), 0, 'pending requests stay out of the ordinary inbox');
 select t.is(public.dm_thread('dan'), null, 'a pending request cannot be opened as a normal conversation');
 select t.is(t.err(format($q$select public.send_message(%L, 'reply before accepting')$q$, :dan)), 'request_pending', 'the recipient must accept before replying');
 select t.is(public.dm_request_action(:dan, true), 'accepted', 'the recipient can accept the request');
