@@ -43,7 +43,7 @@ async function RequestsContent() {
     <main className="mx-auto max-w-[640px] px-4 py-6 sm:px-6">
       <div className="flex items-center justify-between gap-3">
         <div><p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">YapChat</p><h1 className="mt-1 text-[24px] font-medium text-text">Message requests</h1></div>
-        <Link href="/messages" className="btn-secondary">Inbox</Link>
+        <div className="flex gap-3"><Link href="/messages/blocked" className="text-[13px] font-medium text-[var(--accent)] hover:underline">Blocked</Link><Link href="/messages" className="btn-secondary">Inbox</Link></div>
       </div>
       {error ? <p role="alert" className="mt-5 text-[14px] text-text-2">Requests could not be loaded.</p> : <MessageRequests initial={requests} currentUserId={user.id} />}
     </main>
