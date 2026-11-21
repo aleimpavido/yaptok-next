@@ -479,6 +479,28 @@ select t.is(jsonb_array_length(public.following_reposts()), 1, 'the Following re
 select t.is((public.my_yap_progress() ->> 'xp')::integer, 5, 'a unique repost earns the configured XP once');
 select t.is(jsonb_array_length(public.my_yap_progress() -> 'calendar'), 90, 'the streak calendar covers 90 local days');
 select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 0, 'no valid daily post means no active streak');
+
+-- A ready public post starts a personal streak and earns one daily XP reward.
+reset role;
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-valid-one', 'public', 'ready', now());
+select t.login(:cal);
+select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 1, 'one valid public post starts a one-day streak');
+select t.is((public.my_yap_progress() ->> 'best_streak')::integer, 1, 'the first day becomes the personal record');
+select t.is((public.my_yap_progress() ->> 'xp')::integer, 25, 'the first valid post adds one 20 XP daily reward');
+
+-- Additional posts in the same local day do not extend the streak or duplicate XP.
+reset role;
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-valid-two', 'public', 'ready', now());
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-private', 'private', 'ready', now());
+insert into public.videos(owner_id, caption, visibility, status, published_at)
+values (:cal, 'streak-failed', 'public', 'failed', now());
+select t.login(:cal);
+select t.is((public.my_yap_progress() ->> 'current_streak')::integer, 1, 'multiple posts on one day still count as one streak day');
+select t.is((public.my_yap_progress() ->> 'xp')::integer, 25, 'same-day, private and failed posts award no extra XP');
+
 select t.is((public.toggle_repost(:clip, false) ->> 'reposted')::boolean, false, 'a repost can be removed');
 select t.is((public.toggle_repost(:clip, true) ->> 'reposted')::boolean, true, 'a removed repost can be restored');
 select t.is((public.my_yap_progress() ->> 'xp')::integer, 5, 'retries do not duplicate repost XP');
