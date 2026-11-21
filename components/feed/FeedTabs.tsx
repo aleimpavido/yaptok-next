@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /** The switch on top of the feed: For You or Following. Only shown while the following flag is on. */
-export function FeedTabs({ current }: { current: "foryou" | "following" }) {
+export function FeedTabs({ current, repostsOn = false }: { current: "foryou" | "following"; repostsOn?: boolean }) {
   const tab = (href: string, label: string, on: boolean) => (
     <Link
       href={href}
@@ -22,6 +22,7 @@ export function FeedTabs({ current }: { current: "foryou" | "following" }) {
     >
       <div className="pointer-events-auto flex gap-1 rounded-full bg-black/25 px-2 backdrop-blur-sm">
         {tab("/following", "Following", current === "following")}
+        {repostsOn && current === "following" && tab("/following/reposts", "Reposts", false)}
         {tab("/", "For You", current === "foryou")}
       </div>
     </nav>
