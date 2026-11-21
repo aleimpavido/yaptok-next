@@ -386,6 +386,7 @@ select public.send_message(:cal, 'Hello, this starts a request.');
 reset role;
 select t.is((select count(*)::int from realtime.messages where topic = 'user:00000000-0000-4000-8000-00000000000c' and event = 'message_request'), 1, 'a non-followed first message is broadcast as a request');
 select t.login(:dan);
+select t.is(t.err(format($q$select public.send_message(%L, 'another request message')$q$, :cal)), 'request_pending', 'a pending request allows only one initial message');
 select t.is(t.err($q$select * from public.message_requests$q$), 'permission denied for table message_requests', 'requests are not readable directly');
 
 select t.login(:cal);
