@@ -251,11 +251,9 @@ begin
     updated_at = now()
     where sender_id = p_sender and receiver_id = me;
 
-  if p_accept then
-    update public.messages set read_at = now()
-      where sender_id = p_sender and receiver_id = me and read_at is null;
-    return 'accepted';
-  end if;
+  update public.messages set read_at = now()
+    where sender_id = p_sender and receiver_id = me and read_at is null;
+  if p_accept then return 'accepted'; end if;
   return 'declined';
 end;
 $q$;
