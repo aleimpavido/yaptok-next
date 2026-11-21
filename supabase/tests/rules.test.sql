@@ -383,7 +383,9 @@ select t.is(t.err($$select public.dm_threads()$$), 'permission denied for functi
 
 select t.login(:dan);
 select public.send_message(:cal, 'Hello, this starts a request.');
+reset role;
 select t.is((select count(*)::int from realtime.messages where topic = 'user:00000000-0000-4000-8000-00000000000c' and event = 'message_request'), 1, 'a non-followed first message is broadcast as a request');
+select t.login(:dan);
 select t.is(t.err($q$select * from public.message_requests$q$), 'permission denied for table message_requests', 'requests are not readable directly');
 
 select t.login(:cal);
