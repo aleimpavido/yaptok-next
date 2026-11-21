@@ -402,6 +402,7 @@ select t.is(jsonb_array_length(public.dm_thread('dan') -> 'messages'), 2, 'both 
 select t.login(:dan);
 select public.block_user(:cal);
 select t.is(jsonb_array_length(public.my_message_blocks()), 1, 'a person can see their own block list');
+select t.is(public.dm_unread(), 0, 'blocking clears unread messages from that account');
 select t.is(public.dm_thread('cal'), null, 'blocking hides the conversation');
 select t.login(:cal);
 select t.is(t.err(format($q$select public.send_message(%L, 'blocked')$q$, :dan)), 'user_blocked', 'a blocked person cannot send messages');
