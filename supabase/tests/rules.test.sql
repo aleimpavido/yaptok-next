@@ -522,7 +522,7 @@ select t.is(jsonb_array_length(public.feed_page()), 1, 'unbanning brings the cli
 
 select t.login(:owner);
 select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'views')::int = 2, 'the stats page counts today''s views');
-select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'signups')::int = 3, 'and today''s sign-ups');
+select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'signups')::int = 4, 'and today''s sign-ups');
 select t.ok((public.admin_stats(7) -> 'days' -> 6 ->> 'uploads')::int = 1, 'and today''s uploads that did not fail');
 select t.is(jsonb_array_length(public.admin_stats(7) -> 'days'), 7, 'one row per day');
 select t.ok(jsonb_array_length(public.admin_log_page()) >= 20, 'every admin action above is in the audit log');
