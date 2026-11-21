@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { callRpc } from "@/lib/social/client";
+import { createClient } from "@/lib/supabase/client";
 
 export type MessageRequestView = {
   senderId: string;
@@ -14,11 +16,21 @@ export type MessageRequestView = {
   createdAt: string;
 };
 
-export function MessageRequests({ initial }: { initial: MessageRequestView[] }) {
+export function MessageRequests({ initial, currentUserId }: { initial: MessageRequestView[]; currentUserId: string }) {
   const [requests, setRequests] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [accepted, setAccepted] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+    const channel = supabase.channel(`user:${currentUserId}`, { config: { private: true } })
+      .on("broadcast", { event: "message_request" }, () => router.refresh())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [currentUserId, router]);
 
   async function decide(request: MessageRequestView, accept: boolean) {
     setBusy(request.senderId);
