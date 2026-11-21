@@ -20,7 +20,7 @@ export type FeedState =
   | { kind: "off" }
   /** The feed could not be read: the migrations are not applied yet. */
   | { kind: "not-set-up" }
-  | { kind: "ready"; clips: Clip[]; mediaBase: string | null; signedIn: boolean; followingOn: boolean };
+  | { kind: "ready"; clips: Clip[]; mediaBase: string | null; signedIn: boolean; followingOn: boolean; repostsOn: boolean };
 
 /** Which feed: everyone's clips, or the clips of the creators the person follows. */
 export type FeedSource = "feed_page" | "following_page";
@@ -45,7 +45,8 @@ export async function feedState(first?: string, source: FeedSource = "feed_page"
   const lead = readClip(one.data);
   if (lead) clips = [lead, ...clips.filter((c) => c.id !== lead.id)];
   const followingOn = (await flagOn("following", user?.id ?? null)) && (await flagOn("follows", user?.id ?? null));
-  return { kind: "ready", clips, mediaBase: mediaBase(), signedIn: user !== null, followingOn };
+  const repostsOn = user !== null && (await flagOn("reposts", user.id));
+  return { kind: "ready", clips, mediaBase: mediaBase(), signedIn: user !== null, followingOn, repostsOn };
 }
 
 export type ClipState =
